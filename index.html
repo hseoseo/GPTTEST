@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MindAR WebAR Builder</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js" defer></script>
+    <script type="module" src="scripts/builder.js" defer></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>MindAR WebAR Builder</h1>
+      <p>
+        マーカーとコンテンツの組み合わせを登録して、MindAR用のWebARプロジェクトを
+        生成できます。
+      </p>
+    </header>
+
+    <main class="app-main">
+      <section class="panel" aria-labelledby="target-file-heading">
+        <div class="panel-header">
+          <h2 id="target-file-heading">ターゲットファイル</h2>
+          <p>
+            MindAR CLIなどで事前に作成した<code>.mind</code>ファイルを指定してください。
+            このファイルに含まれるターゲットの順番が、下のリストのインデックスと対応します。
+          </p>
+        </div>
+        <div class="panel-body">
+          <label class="input-group">
+            <span>イメージターゲット (.mind)</span>
+            <input type="file" id="target-file" accept=".mind" />
+          </label>
+          <output id="target-file-output" class="file-output" aria-live="polite"></output>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="entries-heading">
+        <div class="panel-header">
+          <h2 id="entries-heading">マーカーとコンテンツ</h2>
+          <p>
+            それぞれのターゲットに表示する画像・動画・3Dモデルを追加します。リストの順番がターゲットインデックスになります。
+          </p>
+        </div>
+        <div class="panel-body">
+          <button id="add-entry" class="primary-button" type="button">＋ コンテンツを追加</button>
+          <div id="entries" class="entries" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="export-heading">
+        <div class="panel-header">
+          <h2 id="export-heading">エクスポート</h2>
+          <p>
+            入力内容からWebARプロジェクト一式をzip形式で生成します。HTMLとアセットをそのままサーバーへ配置するだけでMindARの体験を公開できます。
+          </p>
+        </div>
+        <div class="panel-body export-panel">
+          <button id="download-project" class="primary-button" type="button" disabled>
+            プロジェクトをダウンロード
+          </button>
+          <div class="export-summary" id="export-summary"></div>
+        </div>
+      </section>
+    </main>
+
+    <template id="entry-template">
+      <article class="entry" data-entry-id="">
+        <header class="entry-header">
+          <h3>
+            <span class="entry-index">#0</span>
+            <span class="entry-name" contenteditable="true" role="textbox" aria-label="コンテンツ名">新しいコンテンツ</span>
+          </h3>
+          <div class="entry-actions">
+            <button type="button" class="icon-button move-up" title="上に移動" aria-label="上に移動">▲</button>
+            <button type="button" class="icon-button move-down" title="下に移動" aria-label="下に移動">▼</button>
+            <button type="button" class="icon-button remove" title="削除" aria-label="削除">✕</button>
+          </div>
+        </header>
+        <div class="entry-body">
+          <div class="entry-grid">
+            <label class="input-group">
+              <span>リファレンス画像 (任意)</span>
+              <input type="file" class="reference-input" accept="image/*" />
+            </label>
+            <div class="preview" data-preview="reference"></div>
+            <label class="input-group">
+              <span>アセット種別</span>
+              <select class="asset-type">
+                <option value="image">画像</option>
+                <option value="video">動画</option>
+                <option value="model">3Dモデル (glTF / GLB)</option>
+              </select>
+            </label>
+            <label class="input-group">
+              <span>アセットファイル</span>
+              <input type="file" class="asset-input" accept="image/*,video/*,.glb,.gltf" />
+            </label>
+            <div class="preview" data-preview="asset"></div>
+          </div>
+
+          <details class="transform" open>
+            <summary>表示パラメータ</summary>
+            <div class="transform-grid">
+              <label>位置X<input type="number" class="transform-input position-x" value="0" step="0.01" /></label>
+              <label>位置Y<input type="number" class="transform-input position-y" value="0" step="0.01" /></label>
+              <label>位置Z<input type="number" class="transform-input position-z" value="0" step="0.01" /></label>
+              <label>回転X<input type="number" class="transform-input rotation-x" value="0" step="1" /></label>
+              <label>回転Y<input type="number" class="transform-input rotation-y" value="0" step="1" /></label>
+              <label>回転Z<input type="number" class="transform-input rotation-z" value="0" step="1" /></label>
+              <label>スケールX<input type="number" class="transform-input scale-x" value="1" step="0.01" min="0.01" /></label>
+              <label>スケールY<input type="number" class="transform-input scale-y" value="1" step="0.01" min="0.01" /></label>
+              <label>スケールZ<input type="number" class="transform-input scale-z" value="1" step="0.01" min="0.01" /></label>
+            </div>
+          </details>
+        </div>
+      </article>
+    </template>
+  </body>
+</html>
